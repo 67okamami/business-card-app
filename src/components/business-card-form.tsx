@@ -59,18 +59,27 @@ export function BusinessCardForm({
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = { ...form, imageUrl: imageUrl ?? form.imageUrl };
+  const [saving, setSaving] = useState(false);
 
-    if (editId) {
-      updateCard(editId, data);
-      toast("名刺を更新しました");
-      router.push(`/cards/${editId}`);
-    } else {
-      const card = saveCard(data);
-      toast("名刺を登録しました");
-      router.push(`/cards/${card.id}`);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const data = { ...form, imageUrl: imageUrl ?? form.imageUrl };
+
+      if (editId) {
+        await updateCard(editId, data);
+        toast("名刺を更新しました");
+        router.push(`/cards/${editId}`);
+      } else {
+        const card = await saveCard(data);
+        toast("名刺を登録しました");
+        router.push(`/cards/${card.id}`);
+      }
+    } catch {
+      toast("保存に失敗しました");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -125,7 +134,9 @@ export function BusinessCardForm({
         >
           キャンセル
         </Button>
-        <Button type="submit">保存</Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "保存中..." : "保存"}
+        </Button>
       </div>
     </form>
   );

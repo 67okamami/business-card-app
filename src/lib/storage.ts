@@ -1,91 +1,105 @@
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
+  Timestamp,
+} from "firebase/firestore";
+import { db } from "./firebase";
 import { BusinessCard, BusinessCardFormData } from "@/types/business-card";
 
-const STORAGE_KEY = "business-cards";
+const COLLECTION = "businessCards";
 
-function readAll(): BusinessCard[] {
-  if (typeof window === "undefined") return [];
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as BusinessCard[];
-  } catch {
-    return [];
-  }
+function toCard(id: string, data: Record<string, unknown>): BusinessCard {
+  return {
+    id,
+    lastName: (data.lastName as string) || "",
+    firstName: (data.firstName as string) || "",
+    lastNameKana: (data.lastNameKana as string) || "",
+    firstNameKana: (data.firstNameKana as string) || "",
+    company: (data.company as string) || "",
+    department: (data.department as string) || "",
+    position: (data.position as string) || "",
+    email: (data.email as string) || "",
+    phone: (data.phone as string) || "",
+    mobile: (data.mobile as string) || "",
+    postalCode: (data.postalCode as string) || "",
+    address: (data.address as string) || "",
+    website: (data.website as string) || "",
+    notes: (data.notes as string) || "",
+    imageUrl: (data.imageUrl as string) || "",
+    createdAt: data.createdAt instanceof Timestamp
+      ? data.createdAt.toDate().toISOString()
+      : (data.createdAt as string) || "",
+    updatedAt: data.updatedAt instanceof Timestamp
+      ? data.updatedAt.toDate().toISOString()
+      : (data.updatedAt as string) || "",
+  };
 }
 
-function writeAll(cards: BusinessCard[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(cards));
+export async function getCards(): Promise<BusinessCard[]> {
+  const q = query(collection(db, COLLECTION), orderBy("updatedAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((d) => toCard(d.id, d.data()));
 }
 
-export function getCards(): BusinessCard[] {
-  return readAll().sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+export async function getCardById(id: string): Promise<BusinessCard | undefined> {
+  const snap = await getDoc(doc(db, COLLECTION, id));
+  if (!snap.exists()) return undefined;
+  return toCard(snap.id, snap.data());
 }
 
-export function getCardById(id: string): BusinessCard | undefined {
-  return readAll().find((c) => c.id === id);
-}
-
-export function saveCard(data: BusinessCardFormData): BusinessCard {
-  const now = new Date().toISOString();
-  const card: BusinessCard = {
+export async function saveCard(data: BusinessCardFormData): Promise<BusinessCard> {
+  const now = Timestamp.now();
+  const docData = {
     ...data,
-    id: crypto.randomUUID(),
     createdAt: now,
     updatedAt: now,
   };
-  const cards = readAll();
-  cards.push(card);
-  writeAll(cards);
-  return card;
+  const docRef = await addDoc(collection(db, COLLECTION), docData);
+  return toCard(docRef.id, docData);
 }
 
-export function updateCard(
+export async function updateCard(
   id: string,
   data: BusinessCardFormData
-): BusinessCard | undefined {
-  const cards = readAll();
-  const idx = cards.findIndex((c) => c.id === id);
-  if (idx === -1) return undefined;
-  const updated: BusinessCard = {
-    ...cards[idx],
+): Promise<BusinessCard | undefined> {
+  const docRef = doc(db, COLLECTION, id);
+  const snap = await getDoc(docRef);
+  if (!snap.exists()) return undefined;
+
+  const updateData = {
     ...data,
-    updatedAt: new Date().toISOString(),
+    updatedAt: Timestamp.now(),
   };
-  cards[idx] = updated;
-  writeAll(cards);
-  return updated;
+  await updateDoc(docRef, updateData);
+  return toCard(id, { ...snap.data(), ...updateData });
 }
 
-export function deleteCard(id: string): boolean {
-  const cards = readAll();
-  const filtered = cards.filter((c) => c.id !== id);
-  if (filtered.length === cards.length) return false;
-  writeAll(filtered);
-  return true;
+export async function deleteCard(id: string): Promise<boolean> {
+  try {
+    await deleteDoc(doc(db, COLLECTION, id));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-export function searchCards(query: string): BusinessCard[] {
-  if (!query.trim()) return getCards();
-  const q = query.toLowerCase();
-  return getCards().filter((c) => {
+export async function searchCards(queryStr: string): Promise<BusinessCard[]> {
+  const cards = await getCards();
+  if (!queryStr.trim()) return cards;
+  const q = queryStr.toLowerCase();
+  return cards.filter((c) => {
     const searchable = [
-      c.lastName,
-      c.firstName,
-      c.lastNameKana,
-      c.firstNameKana,
-      c.company,
-      c.department,
-      c.position,
-      c.email,
-      c.phone,
-      c.mobile,
-      c.address,
-      c.notes,
-    ]
-      .join(" ")
-      .toLowerCase();
+      c.lastName, c.firstName, c.lastNameKana, c.firstNameKana,
+      c.company, c.department, c.position, c.email,
+      c.phone, c.mobile, c.address, c.notes,
+    ].join(" ").toLowerCase();
     return searchable.includes(q);
   });
 }

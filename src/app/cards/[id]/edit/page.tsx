@@ -19,14 +19,15 @@ export default function EditCardPage() {
   const [imageUrl, setImageUrl] = useState<string>("");
 
   useEffect(() => {
-    const card = getCardById(id);
-    if (!card) {
-      router.replace("/");
-      return;
-    }
-    const { id: _, createdAt: __, updatedAt: ___, ...formData } = card;
-    setInitialData(formData);
-    setImageUrl(card.imageUrl);
+    getCardById(id).then((card) => {
+      if (!card) {
+        router.replace("/");
+        return;
+      }
+      const { id: _, createdAt: __, updatedAt: ___, ...formData } = card;
+      setInitialData(formData);
+      setImageUrl(card.imageUrl);
+    });
   }, [id, router]);
 
   if (!initialData) return null;

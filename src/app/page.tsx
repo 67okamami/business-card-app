@@ -17,8 +17,8 @@ export default function HomePage() {
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const loadCards = useCallback(() => {
-    const results = query.trim() ? searchCards(query) : getCards();
+  const loadCards = useCallback(async () => {
+    const results = query.trim() ? await searchCards(query) : await getCards();
     setCards(results);
   }, [query]);
 

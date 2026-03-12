@@ -19,16 +19,17 @@ export default function CardDetailPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
-    const found = getCardById(id);
-    if (!found) {
-      router.replace("/");
-      return;
-    }
-    setCard(found);
+    getCardById(id).then((found) => {
+      if (!found) {
+        router.replace("/");
+        return;
+      }
+      setCard(found);
+    });
   }, [id, router]);
 
-  const handleDelete = () => {
-    deleteCard(id);
+  const handleDelete = async () => {
+    await deleteCard(id);
     toast("名刺を削除しました");
     router.push("/");
   };
