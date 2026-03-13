@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { extractJson, parseOcrResponse } from "@/lib/ocr-parse";
 
 const client = new Anthropic();
 
@@ -70,43 +71,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "解析結果が取得できませんでした" }, { status: 500 });
     }
 
-    // JSON部分を抽出（```json ... ``` で囲まれている場合にも対応）
-    let jsonStr = textBlock.text.trim();
-    const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      jsonStr = codeBlockMatch[1].trim();
-    } else {
-      // コードブロックがない場合、JSONオブジェクトを直接抽出
-      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonStr = jsonMatch[0];
-      }
-    }
+    const jsonStr = extractJson(textBlock.text);
 
     try {
       const parsed = JSON.parse(jsonStr);
-
-      // { field: { value, confidence } } 形式を分離
-      const values: Record<string, string> = {};
-      const confidence: Record<string, number> = {};
-
-      for (const [key, entry] of Object.entries(parsed)) {
-        if (
-          entry &&
-          typeof entry === "object" &&
-          "value" in entry &&
-          "confidence" in entry
-        ) {
-          const e = entry as { value: string; confidence: number };
-          values[key] = e.value ?? "";
-          confidence[key] = typeof e.confidence === "number" ? e.confidence : 0;
-        } else {
-          // フォールバック: 旧形式（文字列直接）にも対応
-          values[key] = typeof entry === "string" ? entry : "";
-          confidence[key] = typeof entry === "string" && entry ? 80 : 0;
-        }
-      }
-
+      const { values, confidence } = parseOcrResponse(parsed);
       return NextResponse.json({ values, confidence });
     } catch (parseError) {
       console.error("JSON parse error. Raw response:", jsonStr.substring(0, 200));

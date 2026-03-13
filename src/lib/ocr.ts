@@ -10,7 +10,7 @@ export interface OcrResult {
 /**
  * 画像のdata URLからBase64データとメディアタイプを抽出する
  */
-function parseDataUrl(dataUrl: string): { base64: string; mediaType: string } {
+export function parseDataUrl(dataUrl: string): { base64: string; mediaType: string } {
   const match = dataUrl.match(/^data:(image\/[\w+.\-]+);base64,([\s\S]+)$/);
   if (!match) {
     throw new Error("Invalid data URL format");

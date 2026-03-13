@@ -51,7 +51,7 @@ const fields: FieldDef[] = [
  * - 低確信度（50%未満）: 赤
  * - 空欄: アンバー（読み取れなかった警告）
  */
-function getConfidenceStyle(confidence: number | undefined, hasValue: boolean) {
+export function getConfidenceStyle(confidence: number | undefined, hasValue: boolean) {
   if (!hasValue) {
     return {
       inputClass: "border-red-400 bg-red-50 dark:bg-red-950/20",
