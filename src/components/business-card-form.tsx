@@ -42,6 +42,12 @@ const fields: FieldDef[] = [
   { key: "notes", label: "メモ", placeholder: "商談メモなど", multiline: true },
 ];
 
+const OCR_REQUIRED_FIELDS: (keyof BusinessCardFormData)[] = [
+  "lastName",
+  "firstName",
+  "company",
+];
+
 export function BusinessCardForm({
   initialData,
   editId,
@@ -51,6 +57,7 @@ export function BusinessCardForm({
   const [form, setForm] = useState<BusinessCardFormData>(
     initialData ?? emptyFormData
   );
+  const isOcrMode = !!initialData && !editId;
 
   const handleChange = (
     key: keyof BusinessCardFormData,
@@ -104,10 +111,20 @@ export function BusinessCardForm({
           const gridClass =
             f.half || f.shortWidth ? "" : "md:col-span-2";
 
+          const showWarning =
+            isOcrMode &&
+            OCR_REQUIRED_FIELDS.includes(f.key) &&
+            !form[f.key].trim();
+
           return (
             <div key={f.key} className={gridClass}>
               <label className="block text-sm font-medium text-foreground mb-1">
                 {f.label}
+                {showWarning && (
+                  <span className="ml-2 text-xs font-normal text-amber-600 dark:text-amber-400">
+                    読み取れませんでした
+                  </span>
+                )}
               </label>
               {f.multiline ? (
                 <Textarea
@@ -125,6 +142,11 @@ export function BusinessCardForm({
                   onChange={(e) => handleChange(f.key, e.target.value)}
                   placeholder={f.placeholder}
                   maxLength={100}
+                  className={
+                    showWarning
+                      ? "border-amber-400 bg-amber-50 dark:bg-amber-950/20"
+                      : ""
+                  }
                 />
               )}
             </div>
