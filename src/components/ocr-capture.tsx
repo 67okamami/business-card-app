@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Camera, Upload, Loader2 } from "lucide-react";
 import { recognizeImage, OcrProgress } from "@/lib/ocr";
 import { parseOcrText, mergeOcrResult } from "@/lib/ocr-parser";
+import { compressImage } from "@/lib/image-compress";
 import { BusinessCardFormData } from "@/types/business-card";
 
 interface OcrCaptureProps {
@@ -19,11 +20,13 @@ export function OcrCapture({ onComplete }: OcrCaptureProps) {
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = (selectedFile: File) => {
+  const handleFile = async (selectedFile: File) => {
     setFile(selectedFile);
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string);
+    reader.onload = async (e) => {
+      const raw = e.target?.result as string;
+      const compressed = await compressImage(raw);
+      setImagePreview(compressed);
     };
     reader.readAsDataURL(selectedFile);
   };
