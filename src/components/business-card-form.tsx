@@ -54,9 +54,9 @@ const fields: FieldDef[] = [
 function getConfidenceStyle(confidence: number | undefined, hasValue: boolean) {
   if (!hasValue) {
     return {
-      inputClass: "border-amber-400 bg-amber-50 dark:bg-amber-950/20",
+      inputClass: "border-red-400 bg-red-50 dark:bg-red-950/20",
       label: "読み取れませんでした",
-      labelClass: "text-amber-600 dark:text-amber-400",
+      labelClass: "text-red-600 dark:text-red-400",
       dotClass: "",
     };
   }
