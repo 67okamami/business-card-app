@@ -9,7 +9,7 @@ import { CardDetail } from "@/components/card-detail";
 import { toast } from "@/components/ui/toast";
 import { getCardById, deleteCard } from "@/lib/storage";
 import { BusinessCard } from "@/types/business-card";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Loader2 } from "lucide-react";
 
 export default function CardDetailPage() {
   const params = useParams();
@@ -29,12 +29,25 @@ export default function CardDetailPage() {
   }, [id, router]);
 
   const handleDelete = async () => {
-    await deleteCard(id);
-    toast("名刺を削除しました");
-    router.push("/");
+    try {
+      await deleteCard(id);
+      toast("名刺を削除しました");
+      router.push("/");
+    } catch {
+      toast("削除に失敗しました");
+      setDeleteOpen(false);
+    }
   };
 
-  if (!card) return null;
+  if (!card) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const displayName = `${card.lastName} ${card.firstName}`.trim() || "（名前なし）";
 
   return (
     <div className="min-h-screen">
@@ -73,7 +86,7 @@ export default function CardDetailPage() {
       <Dialog open={deleteOpen} onClose={() => setDeleteOpen(false)}>
         <h3 className="text-lg font-bold mb-2">名刺を削除</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          「{card.lastName} {card.firstName}」の名刺を削除しますか？
+          「{displayName}」の名刺を削除しますか？
           この操作は取り消せません。
         </p>
         <div className="flex justify-end gap-2">

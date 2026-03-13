@@ -9,17 +9,26 @@ import { RegistrationMethodDialog } from "@/components/registration-method-dialo
 
 import { getCards, searchCards } from "@/lib/storage";
 import { BusinessCard } from "@/types/business-card";
-import { Plus, CreditCard } from "lucide-react";
+import { Plus, CreditCard, Loader2 } from "lucide-react";
 
 export default function HomePage() {
   const router = useRouter();
   const [cards, setCards] = useState<BusinessCard[]>([]);
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadCards = useCallback(async () => {
-    const results = query.trim() ? await searchCards(query) : await getCards();
-    setCards(results);
+    try {
+      setError(null);
+      const results = query.trim() ? await searchCards(query) : await getCards();
+      setCards(results);
+    } catch {
+      setError("データの読み込みに失敗しました");
+    } finally {
+      setLoading(false);
+    }
   }, [query]);
 
   useEffect(() => {
@@ -56,7 +65,20 @@ export default function HomePage() {
 
       {/* Card list */}
       <main className="p-4">
-        <BusinessCardList cards={cards} />
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <p className="text-sm">{error}</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={() => { setLoading(true); loadCards(); }}>
+              再読み込み
+            </Button>
+          </div>
+        ) : (
+          <BusinessCardList cards={cards} />
+        )}
       </main>
 
       {/* Mobile: FAB */}

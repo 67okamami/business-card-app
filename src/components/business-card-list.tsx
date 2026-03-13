@@ -25,27 +25,27 @@ export function BusinessCardList({ cards }: BusinessCardListProps) {
         <Link
           key={card.id}
           href={`/cards/${card.id}`}
-          className="block rounded-xl border border-border bg-background p-4 shadow-sm transition hover:shadow-md"
+          className="block overflow-hidden rounded-xl border border-border bg-background p-4 shadow-sm transition hover:shadow-md"
         >
-          <p className="text-lg font-bold text-foreground">
-            {card.lastName} {card.firstName}
+          <p className="truncate text-lg font-bold text-foreground">
+            {`${card.lastName} ${card.firstName}`.trim() || "名前未設定"}
           </p>
           {(card.company || card.department) && (
             <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
               <Building2 className="h-3.5 w-3.5 shrink-0" />
-              {[card.company, card.department].filter(Boolean).join(" / ")}
+              <span className="truncate">{[card.company, card.department].filter(Boolean).join(" / ")}</span>
             </p>
           )}
           {card.email && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground truncate">
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
               <Mail className="h-3.5 w-3.5 shrink-0" />
-              {card.email}
+              <span className="truncate">{card.email}</span>
             </p>
           )}
           {(card.phone || card.mobile) && (
             <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
               <Phone className="h-3.5 w-3.5 shrink-0" />
-              {card.phone || card.mobile}
+              <span className="truncate">{card.phone || card.mobile}</span>
             </p>
           )}
         </Link>

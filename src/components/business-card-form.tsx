@@ -63,6 +63,10 @@ export function BusinessCardForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.lastName.trim() && !form.firstName.trim()) {
+      toast("姓または名を入力してください");
+      return;
+    }
     setSaving(true);
     try {
       const data = { ...form, imageUrl: imageUrl ?? form.imageUrl };
@@ -111,6 +115,7 @@ export function BusinessCardForm({
                   onChange={(e) => handleChange(f.key, e.target.value)}
                   placeholder={f.placeholder}
                   rows={3}
+                  maxLength={500}
                   className="md:col-span-2"
                 />
               ) : (
@@ -119,6 +124,7 @@ export function BusinessCardForm({
                   value={form[f.key]}
                   onChange={(e) => handleChange(f.key, e.target.value)}
                   placeholder={f.placeholder}
+                  maxLength={100}
                 />
               )}
             </div>

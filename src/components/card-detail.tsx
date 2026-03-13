@@ -12,6 +12,16 @@ import {
   Briefcase,
 } from "lucide-react";
 
+function isValidEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+}
+function isValidPhone(v: string) {
+  return /^[\d\-+()\s]+$/.test(v);
+}
+function isValidUrl(v: string) {
+  return /^https?:\/\/.+/.test(v);
+}
+
 interface CardDetailProps {
   card: BusinessCard;
 }
@@ -29,11 +39,11 @@ function InfoRow({
 }) {
   if (!value) return null;
   const content = href ? (
-    <a href={href} className="text-primary hover:underline break-all">
+    <a href={href} className="text-primary hover:underline break-words">
       {value}
     </a>
   ) : (
-    <span className="break-all">{value}</span>
+    <span className="break-words">{value}</span>
   );
 
   return (
@@ -93,19 +103,19 @@ export function CardDetail({ card }: CardDetailProps) {
           icon={Mail}
           label="メール"
           value={card.email}
-          href={card.email ? `mailto:${card.email}` : undefined}
+          href={isValidEmail(card.email) ? `mailto:${card.email}` : undefined}
         />
         <InfoRow
           icon={Phone}
           label="電話番号"
           value={card.phone}
-          href={card.phone ? `tel:${card.phone}` : undefined}
+          href={isValidPhone(card.phone) ? `tel:${card.phone}` : undefined}
         />
         <InfoRow
           icon={Smartphone}
           label="携帯番号"
           value={card.mobile}
-          href={card.mobile ? `tel:${card.mobile}` : undefined}
+          href={isValidPhone(card.mobile) ? `tel:${card.mobile}` : undefined}
         />
 
         {(card.email || card.phone || card.mobile) && (
@@ -125,7 +135,7 @@ export function CardDetail({ card }: CardDetailProps) {
           icon={Globe}
           label="Webサイト"
           value={card.website}
-          href={card.website || undefined}
+          href={isValidUrl(card.website) ? card.website : undefined}
         />
 
         {card.notes && (
