@@ -1,10 +1,17 @@
 import { BusinessCardFormData, emptyFormData } from "@/types/business-card";
 
+export type OcrConfidence = Record<string, number>;
+
+export interface OcrResult {
+  formData: BusinessCardFormData;
+  confidence: OcrConfidence;
+}
+
 /**
  * 画像のdata URLからBase64データとメディアタイプを抽出する
  */
-function parseDataUrl(dataUrl: string): { base64: string; mediaType: string } {
-  const match = dataUrl.match(/^data:(image\/\w+);base64,(.+)$/);
+export function parseDataUrl(dataUrl: string): { base64: string; mediaType: string } {
+  const match = dataUrl.match(/^data:(image\/[\w+.\-]+);base64,([\s\S]+)$/);
   if (!match) {
     throw new Error("Invalid data URL format");
   }
@@ -16,7 +23,7 @@ function parseDataUrl(dataUrl: string): { base64: string; mediaType: string } {
  */
 export async function analyzeBusinessCard(
   imageDataUrl: string
-): Promise<BusinessCardFormData> {
+): Promise<OcrResult> {
   const { base64, mediaType } = parseDataUrl(imageDataUrl);
 
   const res = await fetch("/api/ocr", {
@@ -31,5 +38,8 @@ export async function analyzeBusinessCard(
   }
 
   const parsed = await res.json();
-  return { ...emptyFormData, ...parsed };
+  return {
+    formData: { ...emptyFormData, ...parsed.values },
+    confidence: parsed.confidence ?? {},
+  };
 }

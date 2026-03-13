@@ -133,7 +133,7 @@ export function CardDetail({ card }: CardDetailProps) {
         />
         <InfoRow
           icon={Globe}
-          label="Webサイト"
+          label="関連サイト"
           value={card.website}
           href={isValidUrl(card.website) ? card.website : undefined}
         />

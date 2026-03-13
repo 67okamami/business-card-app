@@ -7,6 +7,7 @@ import { BusinessCardForm } from "@/components/business-card-form";
 import { OcrCapture } from "@/components/ocr-capture";
 
 import { BusinessCardFormData } from "@/types/business-card";
+import { OcrConfidence } from "@/lib/ocr";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -15,13 +16,15 @@ function NewCardContent() {
   const method = searchParams.get("method") ?? "manual";
   const [ocrData, setOcrData] = useState<BusinessCardFormData | null>(null);
   const [ocrImage, setOcrImage] = useState<string>("");
+  const [ocrConfidence, setOcrConfidence] = useState<OcrConfidence | undefined>();
 
   const isOcr = method === "ocr";
   const showForm = !isOcr || ocrData !== null;
 
-  const handleOcrComplete = (data: BusinessCardFormData, imageUrl: string) => {
+  const handleOcrComplete = (data: BusinessCardFormData, imageUrl: string, confidence: OcrConfidence) => {
     setOcrData(data);
     setOcrImage(imageUrl);
+    setOcrConfidence(confidence);
   };
 
   return (
@@ -44,6 +47,7 @@ function NewCardContent() {
           <BusinessCardForm
             initialData={ocrData ?? undefined}
             imageUrl={ocrImage || undefined}
+            ocrConfidence={ocrConfidence}
           />
         )}
       </main>

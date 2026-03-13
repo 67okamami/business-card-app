@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { BusinessCardFormData, emptyFormData } from "@/types/business-card";
 import { saveCard, updateCard } from "@/lib/storage";
 import { toast } from "@/components/ui/toast";
+import { OcrConfidence } from "@/lib/ocr";
 
 interface BusinessCardFormProps {
   initialData?: BusinessCardFormData;
   editId?: string;
   imageUrl?: string;
+  ocrConfidence?: OcrConfidence;
 }
 
 interface FieldDef {
@@ -38,19 +40,63 @@ const fields: FieldDef[] = [
   { key: "mobile", label: "携帯番号", type: "tel", placeholder: "090-1234-5678", half: true },
   { key: "postalCode", label: "郵便番号", placeholder: "100-0001", shortWidth: true },
   { key: "address", label: "住所", placeholder: "東京都千代田区..." },
-  { key: "website", label: "Webサイト", placeholder: "https://example.com" },
+  { key: "website", label: "関連サイト", placeholder: "https://example.com" },
   { key: "notes", label: "メモ", placeholder: "商談メモなど", multiline: true },
 ];
+
+/**
+ * 確信度に応じたスタイル情報を返す
+ * - 高確信度（80%以上）: 緑
+ * - 中確信度（50-79%）: 黄
+ * - 低確信度（50%未満）: 赤
+ * - 空欄: アンバー（読み取れなかった警告）
+ */
+export function getConfidenceStyle(confidence: number | undefined, hasValue: boolean) {
+  if (!hasValue) {
+    return {
+      inputClass: "border-red-400 bg-red-50 dark:bg-red-950/20",
+      label: "読み取れませんでした",
+      labelClass: "text-red-600 dark:text-red-400",
+      dotClass: "",
+    };
+  }
+  if (confidence === undefined) return null;
+
+  if (confidence >= 91) {
+    return {
+      inputClass: "border-green-400 bg-green-50 dark:bg-green-950/20",
+      label: "",
+      labelClass: "",
+      dotClass: "bg-green-500",
+    };
+  }
+  if (confidence >= 51) {
+    return {
+      inputClass: "border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20",
+      label: "",
+      labelClass: "",
+      dotClass: "bg-yellow-500",
+    };
+  }
+  return {
+    inputClass: "border-red-400 bg-red-50 dark:bg-red-950/20",
+    label: "",
+    labelClass: "",
+    dotClass: "bg-red-500",
+  };
+}
 
 export function BusinessCardForm({
   initialData,
   editId,
   imageUrl,
+  ocrConfidence,
 }: BusinessCardFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<BusinessCardFormData>(
     initialData ?? emptyFormData
   );
+  const isOcrMode = !!initialData && !editId;
 
   const handleChange = (
     key: keyof BusinessCardFormData,
@@ -99,15 +145,49 @@ export function BusinessCardForm({
         </div>
       )}
 
+      {isOcrMode && ocrConfidence && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground px-1">
+          <span className="font-medium">読み取り確信度:</span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+            高（91%〜）
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+            中（51〜90%）
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+            低（〜50%）
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {fields.map((f) => {
           const gridClass =
             f.half || f.shortWidth ? "" : "md:col-span-2";
 
+          const isOcrField = f.key !== "notes" && f.key !== "imageUrl";
+          const hasValue = !!form[f.key].trim();
+          const confidenceVal = ocrConfidence?.[f.key];
+          const style =
+            isOcrMode && isOcrField
+              ? getConfidenceStyle(confidenceVal, hasValue)
+              : null;
+
           return (
             <div key={f.key} className={gridClass}>
               <label className="block text-sm font-medium text-foreground mb-1">
                 {f.label}
+                {style && (
+                  <span className={`ml-2 text-xs font-normal ${style.labelClass}`}>
+                    {style.dotClass && (
+                      <span className={`inline-block h-1.5 w-1.5 rounded-full ${style.dotClass} mr-1 align-middle`} />
+                    )}
+                    {style.label}
+                  </span>
+                )}
               </label>
               {f.multiline ? (
                 <Textarea
@@ -125,6 +205,7 @@ export function BusinessCardForm({
                   onChange={(e) => handleChange(f.key, e.target.value)}
                   placeholder={f.placeholder}
                   maxLength={100}
+                  className={style?.inputClass ?? ""}
                 />
               )}
             </div>

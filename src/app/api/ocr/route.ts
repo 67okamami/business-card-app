@@ -1,28 +1,36 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { extractJson, parseOcrResponse } from "@/lib/ocr-parse";
 
 const client = new Anthropic();
 
 const SYSTEM_PROMPT = `あなたは名刺画像から情報を正確に読み取る専門家です。
-名刺画像を受け取り、以下のフィールドをJSON形式で返してください。
-読み取れないフィールドは空文字にしてください。
-websiteフィールドはhttps://を含む完全なURL形式で返してください（例: https://www.example.com）。
-JSONのみを返し、それ以外のテキストは含めないでください。
+名刺画像を受け取り、以下の形式でJSONを返してください。
+
+## 重要なルール
+- 画像が回転・逆さまの場合でも、文字の向きを正しく判断して読み取ってください。
+- 会社名は、ロゴやブランド名（英語表記等）ではなく、名刺に印刷されている正式な日本語の法人名（例:「株式会社ネオジャパン」）を優先してください。ロゴのみで日本語表記がない場合はロゴのテキストを使用してください。
+- 読み取れないフィールドはvalueを空文字にしてください。
+- websiteフィールドはhttps://を含む完全なURL形式で返してください。
+- JSONのみを返し、それ以外のテキストは含めないでください。
+
+## 出力形式
+各フィールドを {"value": "読み取った値", "confidence": 読み取り確信度(0-100の整数)} の形式で返してください。
 
 {
-  "lastName": "姓",
-  "firstName": "名",
-  "lastNameKana": "姓のフリガナ（カタカナ）",
-  "firstNameKana": "名のフリガナ（カタカナ）",
-  "company": "会社名",
-  "department": "部署",
-  "position": "役職",
-  "email": "メールアドレス",
-  "phone": "電話番号（固定電話）",
-  "mobile": "携帯番号",
-  "postalCode": "郵便番号",
-  "address": "住所",
-  "website": "WebサイトURL"
+  "lastName": {"value": "姓", "confidence": 0},
+  "firstName": {"value": "名", "confidence": 0},
+  "lastNameKana": {"value": "姓のフリガナ（カタカナ）", "confidence": 0},
+  "firstNameKana": {"value": "名のフリガナ（カタカナ）", "confidence": 0},
+  "company": {"value": "会社名（正式な日本語法人名を優先）", "confidence": 0},
+  "department": {"value": "部署", "confidence": 0},
+  "position": {"value": "役職", "confidence": 0},
+  "email": {"value": "メールアドレス", "confidence": 0},
+  "phone": {"value": "電話番号（固定電話）", "confidence": 0},
+  "mobile": {"value": "携帯番号", "confidence": 0},
+  "postalCode": {"value": "郵便番号", "confidence": 0},
+  "address": {"value": "住所", "confidence": 0},
+  "website": {"value": "関連サイトURL（製品サイト等。会社の公式サイトURLは含めない）", "confidence": 0}
 }`;
 
 export async function POST(request: NextRequest) {
@@ -63,19 +71,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "解析結果が取得できませんでした" }, { status: 500 });
     }
 
-    // JSON部分を抽出（```json ... ``` で囲まれている場合にも対応）
-    let jsonStr = textBlock.text.trim();
-    const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (codeBlockMatch) {
-      jsonStr = codeBlockMatch[1].trim();
-    }
+    const jsonStr = extractJson(textBlock.text);
 
-    const parsed = JSON.parse(jsonStr);
-    return NextResponse.json(parsed);
+    try {
+      const parsed = JSON.parse(jsonStr);
+      const { values, confidence } = parseOcrResponse(parsed);
+      return NextResponse.json({ values, confidence });
+    } catch (parseError) {
+      console.error("JSON parse error. Raw response:", jsonStr.substring(0, 200));
+      return NextResponse.json(
+        { error: "名刺の解析結果を読み取れませんでした" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("OCR API error:", error);
+    const message = error instanceof Error ? error.message : "名刺の解析に失敗しました";
     return NextResponse.json(
-      { error: "名刺の解析に失敗しました" },
+      { error: message },
       { status: 500 }
     );
   }
