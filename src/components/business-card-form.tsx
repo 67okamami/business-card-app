@@ -62,26 +62,26 @@ function getConfidenceStyle(confidence: number | undefined, hasValue: boolean) {
   }
   if (confidence === undefined) return null;
 
-  if (confidence >= 80) {
+  if (confidence >= 91) {
     return {
       inputClass: "border-green-400 bg-green-50 dark:bg-green-950/20",
-      label: `${confidence}%`,
-      labelClass: "text-green-600 dark:text-green-400",
+      label: "",
+      labelClass: "",
       dotClass: "bg-green-500",
     };
   }
-  if (confidence >= 50) {
+  if (confidence >= 51) {
     return {
       inputClass: "border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20",
-      label: `${confidence}%`,
-      labelClass: "text-yellow-600 dark:text-yellow-500",
+      label: "",
+      labelClass: "",
       dotClass: "bg-yellow-500",
     };
   }
   return {
     inputClass: "border-red-400 bg-red-50 dark:bg-red-950/20",
-    label: `${confidence}%`,
-    labelClass: "text-red-600 dark:text-red-400",
+    label: "",
+    labelClass: "",
     dotClass: "bg-red-500",
   };
 }
@@ -150,15 +150,15 @@ export function BusinessCardForm({
           <span className="font-medium">読み取り確信度:</span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
-            高（80%〜）
+            高（91%〜）
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
-            中（50〜79%）
+            中（51〜90%）
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
-            低（〜49%）
+            低（〜50%）
           </span>
         </div>
       )}
