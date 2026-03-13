@@ -38,7 +38,7 @@ const fields: FieldDef[] = [
   { key: "mobile", label: "携帯番号", type: "tel", placeholder: "090-1234-5678", half: true },
   { key: "postalCode", label: "郵便番号", placeholder: "100-0001", shortWidth: true },
   { key: "address", label: "住所", placeholder: "東京都千代田区..." },
-  { key: "website", label: "Webサイト", type: "url", placeholder: "https://example.com" },
+  { key: "website", label: "Webサイト", placeholder: "https://example.com" },
   { key: "notes", label: "メモ", placeholder: "商談メモなど", multiline: true },
 ];
 

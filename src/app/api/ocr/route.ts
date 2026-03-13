@@ -6,6 +6,7 @@ const client = new Anthropic();
 const SYSTEM_PROMPT = `あなたは名刺画像から情報を正確に読み取る専門家です。
 名刺画像を受け取り、以下のフィールドをJSON形式で返してください。
 読み取れないフィールドは空文字にしてください。
+websiteフィールドはhttps://を含む完全なURL形式で返してください（例: https://www.example.com）。
 JSONのみを返し、それ以外のテキストは含めないでください。
 
 {
