@@ -46,11 +46,15 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error("Speech recognition error:", event.error);
       setIsListening(false);
+      if (event.error === "no-speech" || event.error === "aborted") {
+        // 音声未検出・中断は正常動作なので無視
+        return;
+      }
+      console.error("Speech recognition error:", event.error);
       if (event.error === "not-allowed") {
         alert("マイクへのアクセスが許可されていません。ブラウザの設定を確認してください。");
-      } else if (event.error !== "aborted") {
+      } else {
         alert("音声認識でエラーが発生しました。もう一度お試しください。");
       }
     };
