@@ -3,8 +3,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, Loader2 } from "lucide-react";
-import { recognizeImage, OcrProgress } from "@/lib/ocr";
-import { parseOcrText, mergeOcrResult } from "@/lib/ocr-parser";
+import { analyzeBusinessCard } from "@/lib/ocr";
 import { compressImage } from "@/lib/image-compress";
 import { BusinessCardFormData } from "@/types/business-card";
 
@@ -14,46 +13,39 @@ interface OcrCaptureProps {
 
 export function OcrCapture({ onComplete }: OcrCaptureProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [progress, setProgress] = useState<OcrProgress | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (selectedFile: File) => {
-    setFile(selectedFile);
     const reader = new FileReader();
     reader.onload = async (e) => {
       const raw = e.target?.result as string;
       const compressed = await compressImage(raw);
       setImagePreview(compressed);
+      setError(null);
     };
     reader.readAsDataURL(selectedFile);
   };
 
   const handleAnalyze = async () => {
-    if (!file) return;
+    if (!imagePreview) return;
     setAnalyzing(true);
-    setProgress(null);
+    setError(null);
     try {
-      const text = await recognizeImage(file, setProgress);
-      const parsed = parseOcrText(text);
-      const formData = mergeOcrResult(parsed);
-      onComplete(formData, imagePreview!);
-    } catch {
+      const formData = await analyzeBusinessCard(imagePreview);
+      onComplete(formData, imagePreview);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "解析に失敗しました");
       setAnalyzing(false);
     }
   };
 
   const handleReset = () => {
     setImagePreview(null);
-    setFile(null);
-    setProgress(null);
+    setError(null);
   };
-
-  const progressPercent = progress
-    ? Math.round(progress.progress * 100)
-    : 0;
 
   return (
     <div className="space-y-6">
@@ -102,19 +94,14 @@ export function OcrCapture({ onComplete }: OcrCaptureProps) {
               <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-black/40">
                 <Loader2 className="h-8 w-8 animate-spin text-white" />
                 <p className="mt-2 text-sm font-medium text-white">
-                  名刺を解析中... {progressPercent}%
+                  AIが名刺を解析中...
                 </p>
               </div>
             )}
           </div>
 
-          {analyzing && (
-            <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
+          {error && (
+            <p className="text-sm text-red-500 text-center">{error}</p>
           )}
 
           {!analyzing && (
