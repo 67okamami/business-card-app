@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { BusinessCardFormData, emptyFormData } from "@/types/business-card";
 import { saveCard, updateCard } from "@/lib/storage";
 import { toast } from "@/components/ui/toast";
+import { OcrConfidence } from "@/lib/ocr";
 
 interface BusinessCardFormProps {
   initialData?: BusinessCardFormData;
   editId?: string;
   imageUrl?: string;
+  ocrConfidence?: OcrConfidence;
 }
 
 interface FieldDef {
@@ -42,16 +44,53 @@ const fields: FieldDef[] = [
   { key: "notes", label: "メモ", placeholder: "商談メモなど", multiline: true },
 ];
 
-const OCR_REQUIRED_FIELDS: (keyof BusinessCardFormData)[] = [
-  "lastName",
-  "firstName",
-  "company",
-];
+/**
+ * 確信度に応じたスタイル情報を返す
+ * - 高確信度（80%以上）: 緑
+ * - 中確信度（50-79%）: 黄
+ * - 低確信度（50%未満）: 赤
+ * - 空欄: アンバー（読み取れなかった警告）
+ */
+function getConfidenceStyle(confidence: number | undefined, hasValue: boolean) {
+  if (!hasValue) {
+    return {
+      inputClass: "border-amber-400 bg-amber-50 dark:bg-amber-950/20",
+      label: "読み取れませんでした",
+      labelClass: "text-amber-600 dark:text-amber-400",
+      dotClass: "",
+    };
+  }
+  if (confidence === undefined) return null;
+
+  if (confidence >= 80) {
+    return {
+      inputClass: "border-green-400 bg-green-50 dark:bg-green-950/20",
+      label: `${confidence}%`,
+      labelClass: "text-green-600 dark:text-green-400",
+      dotClass: "bg-green-500",
+    };
+  }
+  if (confidence >= 50) {
+    return {
+      inputClass: "border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20",
+      label: `${confidence}%`,
+      labelClass: "text-yellow-600 dark:text-yellow-500",
+      dotClass: "bg-yellow-500",
+    };
+  }
+  return {
+    inputClass: "border-red-400 bg-red-50 dark:bg-red-950/20",
+    label: `${confidence}%`,
+    labelClass: "text-red-600 dark:text-red-400",
+    dotClass: "bg-red-500",
+  };
+}
 
 export function BusinessCardForm({
   initialData,
   editId,
   imageUrl,
+  ocrConfidence,
 }: BusinessCardFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<BusinessCardFormData>(
@@ -106,23 +145,46 @@ export function BusinessCardForm({
         </div>
       )}
 
+      {isOcrMode && ocrConfidence && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground px-1">
+          <span className="font-medium">読み取り確信度:</span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+            高（80%〜）
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-yellow-500" />
+            中（50〜79%）
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+            低（〜49%）
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {fields.map((f) => {
           const gridClass =
             f.half || f.shortWidth ? "" : "md:col-span-2";
 
-          const showWarning =
-            isOcrMode &&
-            OCR_REQUIRED_FIELDS.includes(f.key) &&
-            !form[f.key].trim();
+          const hasValue = !!form[f.key].trim();
+          const confidenceVal = ocrConfidence?.[f.key];
+          const style =
+            isOcrMode
+              ? getConfidenceStyle(confidenceVal, hasValue)
+              : null;
 
           return (
             <div key={f.key} className={gridClass}>
               <label className="block text-sm font-medium text-foreground mb-1">
                 {f.label}
-                {showWarning && (
-                  <span className="ml-2 text-xs font-normal text-amber-600 dark:text-amber-400">
-                    読み取れませんでした
+                {style && (
+                  <span className={`ml-2 text-xs font-normal ${style.labelClass}`}>
+                    {style.dotClass && (
+                      <span className={`inline-block h-1.5 w-1.5 rounded-full ${style.dotClass} mr-1 align-middle`} />
+                    )}
+                    {style.label}
                   </span>
                 )}
               </label>
@@ -142,11 +204,7 @@ export function BusinessCardForm({
                   onChange={(e) => handleChange(f.key, e.target.value)}
                   placeholder={f.placeholder}
                   maxLength={100}
-                  className={
-                    showWarning
-                      ? "border-amber-400 bg-amber-50 dark:bg-amber-950/20"
-                      : ""
-                  }
+                  className={style?.inputClass ?? ""}
                 />
               )}
             </div>

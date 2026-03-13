@@ -3,12 +3,12 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, Upload, Loader2 } from "lucide-react";
-import { analyzeBusinessCard } from "@/lib/ocr";
+import { analyzeBusinessCard, OcrConfidence } from "@/lib/ocr";
 import { compressImage } from "@/lib/image-compress";
 import { BusinessCardFormData } from "@/types/business-card";
 
 interface OcrCaptureProps {
-  onComplete: (data: BusinessCardFormData, imageUrl: string) => void;
+  onComplete: (data: BusinessCardFormData, imageUrl: string, confidence: OcrConfidence) => void;
 }
 
 export function OcrCapture({ onComplete }: OcrCaptureProps) {
@@ -34,8 +34,8 @@ export function OcrCapture({ onComplete }: OcrCaptureProps) {
     setAnalyzing(true);
     setError(null);
     try {
-      const formData = await analyzeBusinessCard(imagePreview);
-      onComplete(formData, imagePreview);
+      const { formData, confidence } = await analyzeBusinessCard(imagePreview);
+      onComplete(formData, imagePreview, confidence);
     } catch (err) {
       setError(err instanceof Error ? err.message : "解析に失敗しました");
       setAnalyzing(false);
