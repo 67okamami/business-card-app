@@ -9,6 +9,7 @@ import { BusinessCardFormData, emptyFormData } from "@/types/business-card";
 import { saveCard, updateCard } from "@/lib/storage";
 import { toast } from "@/components/ui/toast";
 import { OcrConfidence } from "@/lib/ocr";
+import { useAuth } from "@/contexts/auth-context";
 
 interface BusinessCardFormProps {
   initialData?: BusinessCardFormData;
@@ -93,6 +94,7 @@ export function BusinessCardForm({
   ocrConfidence,
 }: BusinessCardFormProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const [form, setForm] = useState<BusinessCardFormData>(
     initialData ?? emptyFormData
   );
@@ -113,16 +115,17 @@ export function BusinessCardForm({
       toast("姓または名を入力してください");
       return;
     }
+    if (!user) return;
     setSaving(true);
     try {
       const data = { ...form, imageUrl: imageUrl ?? form.imageUrl };
 
       if (editId) {
-        await updateCard(editId, data);
+        await updateCard(user.uid, editId, data);
         toast("名刺を更新しました");
         router.push(`/cards/${editId}`);
       } else {
-        const card = await saveCard(data);
+        const card = await saveCard(user.uid, data);
         toast("名刺を登録しました");
         router.push(`/cards/${card.id}`);
       }

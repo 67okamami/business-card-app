@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ClientLayout } from "@/components/client-layout";
 
 export const metadata: Metadata = {
   title: "名刺管理",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body className="bg-background text-foreground antialiased">
-        <div className="mx-auto max-w-[1200px]">{children}</div>
+        <ClientLayout>
+          <div className="mx-auto max-w-[1200px]">{children}</div>
+        </ClientLayout>
       </body>
     </html>
   );
