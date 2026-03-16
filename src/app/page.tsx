@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { signOutUser } from "@/lib/auth";
 
 import { getCards, searchCards, getSharedCards, SharedCard } from "@/lib/storage";
+import { AccountDialog } from "@/components/account-dialog";
 import { BusinessCard } from "@/types/business-card";
 import { Plus, CreditCard, Loader2, LogOut } from "lucide-react";
 
@@ -21,6 +22,7 @@ function HomeContent() {
   const [sharedCards, setSharedCards] = useState<SharedCard[]>([]);
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,9 +68,13 @@ function HomeContent() {
           </div>
           <div className="flex items-center gap-2">
             {user?.email && (
-              <span className="hidden md:inline text-xs text-muted-foreground border border-border rounded px-2 py-1 max-w-[200px] truncate">
+              <button
+                onClick={() => setAccountOpen(true)}
+                className="hidden md:inline text-xs text-muted-foreground border border-border rounded px-2 py-1 max-w-[200px] truncate hover:bg-muted transition-colors"
+                title="アカウント設定"
+              >
                 {user.email}
-              </span>
+              </button>
             )}
             {/* PC: new card button */}
             <Button
@@ -149,6 +155,15 @@ function HomeContent() {
         onClose={() => setDialogOpen(false)}
         onSelect={handleSelect}
       />
+
+      {user && (
+        <AccountDialog
+          open={accountOpen}
+          onClose={() => setAccountOpen(false)}
+          userId={user.uid}
+          userEmail={user.email ?? ""}
+        />
+      )}
     </div>
   );
 }

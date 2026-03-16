@@ -12,6 +12,7 @@ import {
   setDoc,
   Timestamp,
 } from "firebase/firestore";
+import { deleteUser } from "firebase/auth";
 import { db, auth } from "./firebase";
 import { BusinessCard, BusinessCardFormData } from "@/types/business-card";
 
@@ -246,4 +247,31 @@ export async function findDuplicateOwners(
       ownerEmail: d.data().ownerEmail as string,
       ownerUid: d.data().ownerId as string,
     }));
+}
+
+// ── アカウント削除 ──────────────────────────────────────
+
+export async function deleteAccount(userId: string, userEmail: string): Promise<void> {
+  // Delete all business cards and their cardIndex entries
+  const cardsSnap = await getDocs(cardsCollection(userId));
+  for (const d of cardsSnap.docs) {
+    await deleteCardIndex(userId, d.id);
+    await deleteDoc(d.ref);
+  }
+
+  // Delete receivedCards
+  const receivedSnap = await getDocs(receivedCardsCollection(userId));
+  for (const d of receivedSnap.docs) {
+    await deleteDoc(d.ref);
+  }
+
+  // Delete user profile docs
+  await deleteDoc(doc(db, "users", userId));
+  await deleteDoc(doc(db, "userIndex", userEmail));
+
+  // Delete Firebase Auth user
+  const currentUser = auth.currentUser;
+  if (currentUser) {
+    await deleteUser(currentUser);
+  }
 }
