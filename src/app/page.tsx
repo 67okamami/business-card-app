@@ -65,6 +65,11 @@ function HomeContent() {
             <h1 className="text-lg font-bold">名刺管理</h1>
           </div>
           <div className="flex items-center gap-2">
+            {user?.email && (
+              <span className="hidden md:inline text-xs text-muted-foreground border border-border rounded px-2 py-1 max-w-[200px] truncate">
+                {user.email}
+              </span>
+            )}
             {/* PC: new card button */}
             <Button
               onClick={() => setDialogOpen(true)}
@@ -78,6 +83,7 @@ function HomeContent() {
               size="sm"
               onClick={handleSignOut}
               className="text-muted-foreground"
+              title={user?.email ?? ""}
             >
               <LogOut className="h-4 w-4" />
               <span className="ml-1 hidden md:inline">ログアウト</span>
