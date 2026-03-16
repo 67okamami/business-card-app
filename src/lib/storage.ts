@@ -21,7 +21,7 @@ function cardDoc(userId: string, cardId: string) {
   return doc(db, "users", userId, "businessCards", cardId);
 }
 
-function toCard(id: string, data: Record<string, unknown>): BusinessCard {
+export function toCard(id: string, data: Record<string, unknown>): BusinessCard {
   return {
     id,
     lastName: (data.lastName as string) || "",
