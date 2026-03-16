@@ -172,7 +172,7 @@ export function BusinessCardForm({
           const gridClass =
             f.half || f.shortWidth ? "" : "md:col-span-2";
 
-          const isOcrField = f.key !== "notes" && f.key !== "imageUrl";
+          const isOcrField = f.key !== "notes" && f.key !== "imageUrl" && f.key !== "companyUrl";
           const hasValue = !!form[f.key].trim();
           const confidenceVal = ocrConfidence?.[f.key];
           const style =
