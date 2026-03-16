@@ -35,6 +35,7 @@ const fields: FieldDef[] = [
   { key: "firstNameKana", label: "名（カナ）", placeholder: "ケンタ", half: true },
   { key: "company", label: "会社名", placeholder: "ABC株式会社" },
   { key: "companyUrl", label: "会社HP", placeholder: "https://www.example.co.jp" },
+  { key: "stockCode", label: "証券コード", placeholder: "1234", shortWidth: true },
   { key: "department", label: "部署", placeholder: "営業部", half: true },
   { key: "position", label: "役職", placeholder: "部長", half: true },
   { key: "email", label: "メールアドレス", type: "email", placeholder: "sato@example.com" },
@@ -172,7 +173,7 @@ export function BusinessCardForm({
           const gridClass =
             f.half || f.shortWidth ? "" : "md:col-span-2";
 
-          const isOcrField = f.key !== "notes" && f.key !== "imageUrl" && f.key !== "companyUrl";
+          const isOcrField = f.key !== "notes" && f.key !== "imageUrl" && f.key !== "companyUrl" && f.key !== "stockCode";
           const hasValue = !!form[f.key].trim();
           const confidenceVal = ocrConfidence?.[f.key];
           const style =

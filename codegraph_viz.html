@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>OCRフロー可視化</title>
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+  body { margin: 0; font-family: sans-serif; background: #0f172a; color: #e2e8f0; }
+  #title { padding: 16px 24px; font-size: 18px; font-weight: bold; border-bottom: 1px solid #334155; }
+  #legend { display: flex; gap: 16px; padding: 10px 24px; font-size: 12px; border-bottom: 1px solid #334155; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; }
+  #network { width: 100%; height: calc(100vh - 100px); }
+</style>
+</head>
+<body>
+<div id="title">🔍 OCRフロー可視化（名刺管理アプリ）</div>
+<div id="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div>ページ / コンポーネント</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div>関数</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div>API Route</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>外部API</div>
+</div>
+<div id="network"></div>
+<script>
+const nodes = new vis.DataSet([
+  // Pages / Components
+  { id: 1,  label: "page.tsx\n(トップ)",         group: "page",  title: "src/app/page.tsx\nユーザーが登録方法を選択する画面" },
+  { id: 2,  label: "NewCardPage\n/cards/new",     group: "page",  title: "src/app/cards/new/page.tsx\nAuthGuard + Suspense でラップ" },
+  { id: 3,  label: "NewCardContent",              group: "page",  title: "src/app/cards/new/page.tsx\nOCR or 手動入力を切り替えるコンテナ" },
+  { id: 4,  label: "OcrCapture",                  group: "comp",  title: "src/components/ocr-capture.tsx\nカメラ撮影 / ファイル選択 / 回転 / 解析ボタン" },
+  { id: 5,  label: "BusinessCardForm",            group: "comp",  title: "src/components/business-card-form.tsx\nOCR結果を初期値としてフォーム表示" },
+  // Functions in ocr-capture.tsx
+  { id: 6,  label: "handleFile()",                group: "func",  title: "src/components/ocr-capture.tsx\nFileReader でファイル読み込み → compressImage()" },
+  { id: 7,  label: "compressImage()",             group: "func",  title: "src/lib/image-compress.ts\n画像をCanvas経由で圧縮してdata URLを返す" },
+  { id: 8,  label: "handleRotate()",              group: "func",  title: "src/components/ocr-capture.tsx\nrotateImage() で90度回転" },
+  { id: 9,  label: "rotateImage()",               group: "func",  title: "src/components/ocr-capture.tsx\nCanvas APIで画像を回転" },
+  { id: 10, label: "handleAnalyze()",             group: "func",  title: "src/components/ocr-capture.tsx\nanalyzeBusinessCard() を呼び出す" },
+  // Functions in ocr.ts
+  { id: 11, label: "analyzeBusinessCard()",       group: "func",  title: "src/lib/ocr.ts\nparseDataUrl() → POST /api/ocr → company-url取得" },
+  { id: 12, label: "parseDataUrl()",              group: "func",  title: "src/lib/ocr.ts\ndata URLからbase64とmediaTypeを抽出" },
+  // API Routes
+  { id: 13, label: "POST /api/ocr",               group: "api",   title: "src/app/api/ocr/route.ts\nClaude Vision APIを呼び出してJSONを返す" },
+  { id: 14, label: "GET /api/company-url",        group: "api",   title: "src/app/api/company-url/route.ts\nGoogle CSEで会社URLを検索" },
+  // Functions in ocr/route.ts
+  { id: 15, label: "extractJson()",               group: "func",  title: "src/lib/ocr-parse.ts\nClaudeのレスポンスからJSONブロックを抽出" },
+  { id: 16, label: "parseOcrResponse()",          group: "func",  title: "src/lib/ocr-parse.ts\n{ value, confidence } 形式をvalues/confidenceに分離" },
+  // External APIs
+  { id: 17, label: "Claude Vision API\n(Anthropic)", group: "ext", title: "claude-sonnet-4-20250514\n名刺画像からフィールドをJSON形式で抽出" },
+  { id: 18, label: "Google CSE API",              group: "ext",   title: "Google Custom Search Engine\n会社名から公式サイトURLを検索" },
+  // Callback
+  { id: 19, label: "handleOcrComplete()",         group: "func",  title: "src/app/cards/new/page.tsx\nOCR完了後にformData/imageUrl/confidenceをstateにセット" },
+]);
+
+const edges = new vis.DataSet([
+  // ページ遷移
+  { from: 1,  to: 2,  label: "?method=ocr",       arrows: "to", dashes: true },
+  { from: 2,  to: 3,  label: "renders",            arrows: "to" },
+  // NewCardContent の分岐
+  { from: 3,  to: 4,  label: "isOcr && !ocrData",  arrows: "to" },
+  { from: 3,  to: 5,  label: "showForm",            arrows: "to" },
+  { from: 3,  to: 19, label: "onComplete prop",     arrows: "to", dashes: true },
+  { from: 19, to: 5,  label: "initialData渡す",     arrows: "to" },
+  // OcrCapture 内部フロー
+  { from: 4,  to: 6,  label: "onChange",            arrows: "to" },
+  { from: 6,  to: 7,  label: "calls",               arrows: "to" },
+  { from: 4,  to: 8,  label: "回転ボタン click",    arrows: "to" },
+  { from: 8,  to: 9,  label: "calls",               arrows: "to" },
+  { from: 4,  to: 10, label: "解析ボタン click",    arrows: "to" },
+  { from: 10, to: 11, label: "calls",               arrows: "to" },
+  { from: 10, to: 19, label: "onComplete()",        arrows: "to" },
+  // analyzeBusinessCard フロー
+  { from: 11, to: 12, label: "calls",               arrows: "to" },
+  { from: 11, to: 13, label: "fetch POST",          arrows: "to" },
+  { from: 11, to: 14, label: "fetch GET\n(company取得)", arrows: "to" },
+  // API/OCR route フロー
+  { from: 13, to: 17, label: "messages.create()",   arrows: "to" },
+  { from: 13, to: 15, label: "calls",               arrows: "to" },
+  { from: 13, to: 16, label: "calls",               arrows: "to" },
+  // 外部API
+  { from: 14, to: 18, label: "search()",            arrows: "to" },
+]);
+
+const groups = {
+  page: { color: { background: "#6366f1", border: "#4f46e5" }, font: { color: "#fff", size: 13 }, shape: "box" },
+  comp: { color: { background: "#8b5cf6", border: "#7c3aed" }, font: { color: "#fff", size: 13 }, shape: "box" },
+  func: { color: { background: "#10b981", border: "#059669" }, font: { color: "#fff", size: 12 }, shape: "ellipse" },
+  api:  { color: { background: "#f59e0b", border: "#d97706" }, font: { color: "#fff", size: 13 }, shape: "diamond" },
+  ext:  { color: { background: "#ef4444", border: "#dc2626" }, font: { color: "#fff", size: 12 }, shape: "hexagon" },
+};
+
+const container = document.getElementById("network");
+const data = { nodes, edges };
+const options = {
+  groups,
+  layout: { hierarchical: { direction: "LR", sortMethod: "directed", levelSeparation: 220, nodeSpacing: 100 } },
+  edges: {
+    font: { size: 11, color: "#94a3b8", align: "middle" },
+    color: { color: "#475569", highlight: "#94a3b8" },
+    smooth: { type: "cubicBezier", forceDirection: "horizontal" },
+  },
+  nodes: { borderWidth: 2, shadow: true, font: { multi: false } },
+  physics: { enabled: false },
+  interaction: { hover: true, tooltipDelay: 100 },
+};
+
+new vis.Network(container, data, options);
+</script>
+</body>
+</html>
