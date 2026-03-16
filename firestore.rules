@@ -1,8 +1,38 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // User profile (readable by any authenticated user for sharing feature)
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Business cards owned by user; also readable if user is in sharedWith[]
     match /users/{userId}/businessCards/{cardId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid in resource.data.sharedWith;
+    }
+
+    // Received cards (references to shared cards)
+    // create: any authenticated user can add a share entry to someone else's receivedCards
+    // read/delete: only the owner can read/delete their own received cards
+    match /users/{userId}/receivedCards/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+
+    // Card index for duplicate detection
+    match /cardIndex/{indexId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.ownerId;
+      allow delete: if request.auth != null;
+    }
+
+    // User index for email-to-UID lookup (share by email)
+    match /userIndex/{email} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
   }
 }

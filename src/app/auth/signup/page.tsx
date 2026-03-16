@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signUp } from "@/lib/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import { CreditCard } from "lucide-react";
 
 export default function SignupPage() {
@@ -29,7 +31,11 @@ export default function SignupPage() {
     }
     setLoading(true);
     try {
-      await signUp(email, password);
+      const credential = await signUp(email, password);
+      const uid = credential.user.uid;
+      // Save user profile for sharing feature
+      await setDoc(doc(db, "userIndex", email), { uid });
+      await setDoc(doc(db, "users", uid), { email });
       router.replace("/");
     } catch (err: unknown) {
       if (

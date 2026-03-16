@@ -10,7 +10,8 @@ import { AuthGuard } from "@/components/auth-guard";
 import { useAuth } from "@/contexts/auth-context";
 import { signOutUser } from "@/lib/auth";
 
-import { getCards, searchCards } from "@/lib/storage";
+import { getCards, searchCards, getSharedCards, SharedCard } from "@/lib/storage";
+import { AccountDialog } from "@/components/account-dialog";
 import { BusinessCard } from "@/types/business-card";
 import { Plus, CreditCard, Loader2, LogOut } from "lucide-react";
 
@@ -18,8 +19,10 @@ function HomeContent() {
   const router = useRouter();
   const { user } = useAuth();
   const [cards, setCards] = useState<BusinessCard[]>([]);
+  const [sharedCards, setSharedCards] = useState<SharedCard[]>([]);
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,10 +30,12 @@ function HomeContent() {
     if (!user) return;
     try {
       setError(null);
-      const results = query.trim()
-        ? await searchCards(user.uid, query)
-        : await getCards(user.uid);
+      const [results, shared] = await Promise.all([
+        query.trim() ? searchCards(user.uid, query) : getCards(user.uid),
+        query.trim() ? Promise.resolve([]) : getSharedCards(user.uid),
+      ]);
       setCards(results);
+      setSharedCards(shared);
     } catch {
       setError("データの読み込みに失敗しました");
     } finally {
@@ -62,6 +67,15 @@ function HomeContent() {
             <h1 className="text-lg font-bold">名刺管理</h1>
           </div>
           <div className="flex items-center gap-2">
+            {user?.email && (
+              <button
+                onClick={() => setAccountOpen(true)}
+                className="hidden md:inline text-xs text-muted-foreground border border-border rounded px-2 py-1 max-w-[200px] truncate hover:bg-muted transition-colors"
+                title="アカウント設定"
+              >
+                {user.email}
+              </button>
+            )}
             {/* PC: new card button */}
             <Button
               onClick={() => setDialogOpen(true)}
@@ -75,6 +89,7 @@ function HomeContent() {
               size="sm"
               onClick={handleSignOut}
               className="text-muted-foreground"
+              title={user?.email ?? ""}
             >
               <LogOut className="h-4 w-4" />
               <span className="ml-1 hidden md:inline">ログアウト</span>
@@ -87,7 +102,7 @@ function HomeContent() {
       </header>
 
       {/* Card list */}
-      <main className="p-4">
+      <main className="p-4 space-y-6">
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -108,7 +123,21 @@ function HomeContent() {
             </Button>
           </div>
         ) : (
-          <BusinessCardList cards={cards} />
+          <>
+            <BusinessCardList cards={cards} />
+
+            {sharedCards.length > 0 && (
+              <div>
+                <h2 className="text-sm font-medium text-muted-foreground mb-3 px-1">
+                  共有された名刺
+                </h2>
+                <BusinessCardList
+                  cards={sharedCards.map((s) => s.card)}
+                  getHref={(card) => `/cards/${card.id}?owner=${sharedCards.find((s) => s.card.id === card.id)?.ownerId ?? ""}`}
+                />
+              </div>
+            )}
+          </>
         )}
       </main>
 
@@ -126,6 +155,15 @@ function HomeContent() {
         onClose={() => setDialogOpen(false)}
         onSelect={handleSelect}
       />
+
+      {user && (
+        <AccountDialog
+          open={accountOpen}
+          onClose={() => setAccountOpen(false)}
+          userId={user.uid}
+          userEmail={user.email ?? ""}
+        />
+      )}
     </div>
   );
 }

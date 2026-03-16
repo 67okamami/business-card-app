@@ -6,9 +6,10 @@ import { Building2, Mail, Phone } from "lucide-react";
 
 interface BusinessCardListProps {
   cards: BusinessCard[];
+  getHref?: (card: BusinessCard) => string;
 }
 
-export function BusinessCardList({ cards }: BusinessCardListProps) {
+export function BusinessCardList({ cards, getHref }: BusinessCardListProps) {
   if (cards.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
@@ -24,7 +25,7 @@ export function BusinessCardList({ cards }: BusinessCardListProps) {
       {cards.map((card) => (
         <Link
           key={card.id}
-          href={`/cards/${card.id}`}
+          href={getHref ? getHref(card) : `/cards/${card.id}`}
           className="block overflow-hidden rounded-xl border border-border bg-background p-4 shadow-sm transition hover:shadow-md"
         >
           <p className="truncate text-lg font-bold text-foreground">
