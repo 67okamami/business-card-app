@@ -83,12 +83,26 @@ export function CardDetail({ card }: CardDetailProps) {
 
         {(card.company || card.department || card.position) && (
           <>
-            <InfoRow
-              icon={Building2}
-              label="会社名"
-              value={card.company}
-              href={isValidUrl(card.companyUrl) ? card.companyUrl : undefined}
-            />
+            <div className="flex items-start gap-3 py-2">
+              <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">会社名</p>
+                <p className="text-sm flex items-center gap-2 flex-wrap">
+                  {isValidUrl(card.companyUrl) ? (
+                    <a href={card.companyUrl} className="text-primary hover:underline break-words">
+                      {card.company}
+                    </a>
+                  ) : (
+                    <span className="break-words">{card.company}</span>
+                  )}
+                  {card.stockCode && (
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
+                      {card.stockCode}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
             <InfoRow
               icon={Briefcase}
               label="部署 / 役職"

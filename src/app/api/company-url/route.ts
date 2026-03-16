@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lookupStockCode } from "@/lib/company-lookup";
 
 export async function GET(request: NextRequest) {
   const company = request.nextUrl.searchParams.get("company");
@@ -6,11 +7,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "company parameter is required" }, { status: 400 });
   }
 
+  const stockCode = lookupStockCode(company);
+
   const apiKey = process.env.GOOGLE_CSE_API_KEY;
   const cseId = process.env.GOOGLE_CSE_ID;
 
   if (!apiKey || !cseId || apiKey === "your_google_cse_api_key_here") {
-    return NextResponse.json({ url: "" });
+    return NextResponse.json({ url: "", stockCode });
   }
 
   try {
@@ -20,8 +23,8 @@ export async function GET(request: NextRequest) {
     );
     const data = await res.json();
     const url: string = data.items?.[0]?.link ?? "";
-    return NextResponse.json({ url });
+    return NextResponse.json({ url, stockCode });
   } catch {
-    return NextResponse.json({ url: "" });
+    return NextResponse.json({ url: "", stockCode });
   }
 }

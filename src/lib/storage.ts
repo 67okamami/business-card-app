@@ -44,6 +44,7 @@ export function toCard(id: string, data: Record<string, unknown>): BusinessCard 
     postalCode: (data.postalCode as string) || "",
     address: (data.address as string) || "",
     companyUrl: (data.companyUrl as string) || "",
+    stockCode: (data.stockCode as string) || "",
     website: (data.website as string) || "",
     notes: (data.notes as string) || "",
     imageUrl: (data.imageUrl as string) || "",

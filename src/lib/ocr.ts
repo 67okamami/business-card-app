@@ -40,7 +40,7 @@ export async function analyzeBusinessCard(
   const parsed = await res.json();
   const formData: BusinessCardFormData = { ...emptyFormData, ...parsed.values };
 
-  // company がある場合、Google CSE で会社HPを取得
+  // company がある場合、会社HPをGoogle CSEで、証券コードをJPXデータから取得
   if (formData.company) {
     try {
       const cseRes = await fetch(
@@ -54,6 +54,9 @@ export async function analyzeBusinessCard(
           if (formData.website === cseData.url) {
             formData.website = "";
           }
+        }
+        if (cseData.stockCode) {
+          formData.stockCode = cseData.stockCode;
         }
       }
     } catch {

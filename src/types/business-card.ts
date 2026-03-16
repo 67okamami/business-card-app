@@ -13,6 +13,7 @@ export interface BusinessCard {
   postalCode: string;
   address: string;
   companyUrl: string;
+  stockCode: string;
   website: string;
   notes: string;
   imageUrl: string;
@@ -40,6 +41,7 @@ export const emptyFormData: BusinessCardFormData = {
   postalCode: "",
   address: "",
   companyUrl: "",
+  stockCode: "",
   website: "",
   notes: "",
   imageUrl: "",
