@@ -15,8 +15,11 @@ service cloud.firestore {
     }
 
     // Received cards (references to shared cards)
+    // create: any authenticated user can add a share entry to someone else's receivedCards
+    // read/delete: only the owner can read/delete their own received cards
     match /users/{userId}/receivedCards/{docId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
     }
 
     // Card index for duplicate detection
