@@ -87,6 +87,7 @@ export function CardDetail({ card }: CardDetailProps) {
               icon={Building2}
               label="会社名"
               value={card.company}
+              href={isValidUrl(card.companyUrl) ? card.companyUrl : undefined}
             />
             <InfoRow
               icon={Briefcase}

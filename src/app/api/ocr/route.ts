@@ -30,7 +30,8 @@ const SYSTEM_PROMPT = `あなたは名刺画像から情報を正確に読み取
   "mobile": {"value": "携帯番号", "confidence": 0},
   "postalCode": {"value": "郵便番号", "confidence": 0},
   "address": {"value": "住所", "confidence": 0},
-  "website": {"value": "関連サイトURL（製品サイト等。会社の公式サイトURLは含めない）", "confidence": 0}
+  "companyUrl": {"value": "会社公式サイトURL（名刺に記載されている会社のホームページURL）", "confidence": 0},
+  "website": {"value": "関連サイトURL（製品・サービスサイト等。会社の公式サイトURLは含めない）", "confidence": 0}
 }`;
 
 export async function POST(request: NextRequest) {
