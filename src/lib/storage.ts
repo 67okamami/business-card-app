@@ -222,9 +222,12 @@ export async function getSharedCards(userId: string): Promise<SharedCard[]> {
       const cardSnap = await getDoc(cardDoc(ownerId, cardId));
       if (cardSnap.exists()) {
         results.push({ card: toCard(cardSnap.id, cardSnap.data()), ownerId });
+      } else {
+        // Card was deleted by owner; clean up stale receivedCards entry
+        await deleteDoc(d.ref);
       }
     } catch {
-      // Card may have been deleted; skip
+      // Permission denied or other error; skip silently
     }
   }
 
