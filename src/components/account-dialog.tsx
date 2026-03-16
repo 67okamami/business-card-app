@@ -71,9 +71,11 @@ export function AccountDialog({ open, onClose, userId, userEmail }: AccountDialo
       ) : (
         <>
           <h3 className="text-lg font-bold mb-2">アカウントを削除しますか？</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            登録中の名刺データがすべて削除されます。この操作は取り消せません。
-          </p>
+          <ul className="text-sm text-muted-foreground mb-4 space-y-1 list-disc list-inside">
+            <li>登録中の名刺データがすべて削除されます</li>
+            <li>他のユーザーに共有した名刺は、相手の画面からも見えなくなります</li>
+            <li>この操作は取り消せません</li>
+          </ul>
           {error && <p className="text-sm text-destructive mb-3">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => { setConfirming(false); setError(""); }} disabled={loading}>
