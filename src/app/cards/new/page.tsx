@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { BusinessCardForm } from "@/components/business-card-form";
 import { OcrCapture } from "@/components/ocr-capture";
+import { AuthGuard } from "@/components/auth-guard";
 
 import { BusinessCardFormData } from "@/types/business-card";
 import { OcrConfidence } from "@/lib/ocr";
@@ -21,7 +22,11 @@ function NewCardContent() {
   const isOcr = method === "ocr";
   const showForm = !isOcr || ocrData !== null;
 
-  const handleOcrComplete = (data: BusinessCardFormData, imageUrl: string, confidence: OcrConfidence) => {
+  const handleOcrComplete = (
+    data: BusinessCardFormData,
+    imageUrl: string,
+    confidence: OcrConfidence
+  ) => {
     setOcrData(data);
     setOcrImage(imageUrl);
     setOcrConfidence(confidence);
@@ -57,8 +62,10 @@ function NewCardContent() {
 
 export default function NewCardPage() {
   return (
-    <Suspense>
-      <NewCardContent />
-    </Suspense>
+    <AuthGuard>
+      <Suspense>
+        <NewCardContent />
+      </Suspense>
+    </AuthGuard>
   );
 }

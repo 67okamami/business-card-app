@@ -4,22 +4,23 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { BusinessCardForm } from "@/components/business-card-form";
-
+import { AuthGuard } from "@/components/auth-guard";
+import { useAuth } from "@/contexts/auth-context";
 import { getCardById } from "@/lib/storage";
 import { BusinessCardFormData } from "@/types/business-card";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
-export default function EditCardPage() {
+function EditCardContent() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const id = params.id as string;
-  const [initialData, setInitialData] = useState<BusinessCardFormData | null>(
-    null
-  );
+  const [initialData, setInitialData] = useState<BusinessCardFormData | null>(null);
   const [imageUrl, setImageUrl] = useState<string>("");
 
   useEffect(() => {
-    getCardById(id).then((card) => {
+    if (!user) return;
+    getCardById(user.uid, id).then((card) => {
       if (!card) {
         router.replace("/");
         return;
@@ -28,7 +29,7 @@ export default function EditCardPage() {
       setInitialData(formData);
       setImageUrl(card.imageUrl);
     });
-  }, [id, router]);
+  }, [id, router, user]);
 
   if (!initialData) {
     return (
@@ -60,5 +61,13 @@ export default function EditCardPage() {
         />
       </main>
     </div>
+  );
+}
+
+export default function EditCardPage() {
+  return (
+    <AuthGuard>
+      <EditCardContent />
+    </AuthGuard>
   );
 }

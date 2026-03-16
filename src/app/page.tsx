@@ -6,13 +6,17 @@ import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/search-bar";
 import { BusinessCardList } from "@/components/business-card-list";
 import { RegistrationMethodDialog } from "@/components/registration-method-dialog";
+import { AuthGuard } from "@/components/auth-guard";
+import { useAuth } from "@/contexts/auth-context";
+import { signOutUser } from "@/lib/auth";
 
 import { getCards, searchCards } from "@/lib/storage";
 import { BusinessCard } from "@/types/business-card";
-import { Plus, CreditCard, Loader2 } from "lucide-react";
+import { Plus, CreditCard, Loader2, LogOut } from "lucide-react";
 
-export default function HomePage() {
+function HomeContent() {
   const router = useRouter();
+  const { user } = useAuth();
   const [cards, setCards] = useState<BusinessCard[]>([]);
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -20,16 +24,19 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadCards = useCallback(async () => {
+    if (!user) return;
     try {
       setError(null);
-      const results = query.trim() ? await searchCards(query) : await getCards();
+      const results = query.trim()
+        ? await searchCards(user.uid, query)
+        : await getCards(user.uid);
       setCards(results);
     } catch {
       setError("データの読み込みに失敗しました");
     } finally {
       setLoading(false);
     }
-  }, [query]);
+  }, [query, user]);
 
   useEffect(() => {
     loadCards();
@@ -38,6 +45,11 @@ export default function HomePage() {
   const handleSelect = (method: "manual" | "ocr") => {
     setDialogOpen(false);
     router.push(`/cards/new?method=${method}`);
+  };
+
+  const handleSignOut = async () => {
+    await signOutUser();
+    router.replace("/auth/login");
   };
 
   return (
@@ -49,14 +61,25 @@ export default function HomePage() {
             <CreditCard className="h-5 w-5 text-primary" />
             <h1 className="text-lg font-bold">名刺管理</h1>
           </div>
-          {/* PC: header button */}
-          <Button
-            onClick={() => setDialogOpen(true)}
-            className="hidden md:inline-flex"
-          >
-            <Plus className="mr-1 h-4 w-4" />
-            新規登録
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* PC: new card button */}
+            <Button
+              onClick={() => setDialogOpen(true)}
+              className="hidden md:inline-flex"
+            >
+              <Plus className="mr-1 h-4 w-4" />
+              新規登録
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="text-muted-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="ml-1 hidden md:inline">ログアウト</span>
+            </Button>
+          </div>
         </div>
         <div className="mt-3">
           <SearchBar value={query} onChange={setQuery} />
@@ -72,7 +95,15 @@ export default function HomePage() {
         ) : error ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <p className="text-sm">{error}</p>
-            <Button variant="outline" size="sm" className="mt-3" onClick={() => { setLoading(true); loadCards(); }}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                setLoading(true);
+                loadCards();
+              }}
+            >
               再読み込み
             </Button>
           </div>
@@ -96,5 +127,13 @@ export default function HomePage() {
         onSelect={handleSelect}
       />
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <AuthGuard>
+      <HomeContent />
+    </AuthGuard>
   );
 }

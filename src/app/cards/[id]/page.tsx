@@ -7,30 +7,35 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { CardDetail } from "@/components/card-detail";
 import { toast } from "@/components/ui/toast";
+import { AuthGuard } from "@/components/auth-guard";
+import { useAuth } from "@/contexts/auth-context";
 import { getCardById, deleteCard } from "@/lib/storage";
 import { BusinessCard } from "@/types/business-card";
 import { ArrowLeft, Pencil, Trash2, Loader2 } from "lucide-react";
 
-export default function CardDetailPage() {
+function CardDetailContent() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const id = params.id as string;
   const [card, setCard] = useState<BusinessCard | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   useEffect(() => {
-    getCardById(id).then((found) => {
+    if (!user) return;
+    getCardById(user.uid, id).then((found) => {
       if (!found) {
         router.replace("/");
         return;
       }
       setCard(found);
     });
-  }, [id, router]);
+  }, [id, router, user]);
 
   const handleDelete = async () => {
+    if (!user) return;
     try {
-      await deleteCard(id);
+      await deleteCard(user.uid, id);
       toast("名刺を削除しました");
       router.push("/");
     } catch {
@@ -99,5 +104,13 @@ export default function CardDetailPage() {
         </div>
       </Dialog>
     </div>
+  );
+}
+
+export default function CardDetailPage() {
+  return (
+    <AuthGuard>
+      <CardDetailContent />
+    </AuthGuard>
   );
 }

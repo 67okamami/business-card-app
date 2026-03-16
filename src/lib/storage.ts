@@ -13,9 +13,15 @@ import {
 import { db } from "./firebase";
 import { BusinessCard, BusinessCardFormData } from "@/types/business-card";
 
-const COLLECTION = "businessCards";
+function cardsCollection(userId: string) {
+  return collection(db, "users", userId, "businessCards");
+}
 
-function toCard(id: string, data: Record<string, unknown>): BusinessCard {
+function cardDoc(userId: string, cardId: string) {
+  return doc(db, "users", userId, "businessCards", cardId);
+}
+
+export function toCard(id: string, data: Record<string, unknown>): BusinessCard {
   return {
     id,
     lastName: (data.lastName as string) || "",
@@ -33,73 +39,88 @@ function toCard(id: string, data: Record<string, unknown>): BusinessCard {
     website: (data.website as string) || "",
     notes: (data.notes as string) || "",
     imageUrl: (data.imageUrl as string) || "",
-    createdAt: data.createdAt instanceof Timestamp
-      ? data.createdAt.toDate().toISOString()
-      : (data.createdAt as string) || "",
-    updatedAt: data.updatedAt instanceof Timestamp
-      ? data.updatedAt.toDate().toISOString()
-      : (data.updatedAt as string) || "",
+    createdAt:
+      data.createdAt instanceof Timestamp
+        ? data.createdAt.toDate().toISOString()
+        : (data.createdAt as string) || "",
+    updatedAt:
+      data.updatedAt instanceof Timestamp
+        ? data.updatedAt.toDate().toISOString()
+        : (data.updatedAt as string) || "",
   };
 }
 
-export async function getCards(): Promise<BusinessCard[]> {
-  const q = query(collection(db, COLLECTION), orderBy("updatedAt", "desc"));
+export async function getCards(userId: string): Promise<BusinessCard[]> {
+  const q = query(cardsCollection(userId), orderBy("updatedAt", "desc"));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((d) => toCard(d.id, d.data()));
 }
 
-export async function getCardById(id: string): Promise<BusinessCard | undefined> {
-  const snap = await getDoc(doc(db, COLLECTION, id));
+export async function getCardById(
+  userId: string,
+  id: string
+): Promise<BusinessCard | undefined> {
+  const snap = await getDoc(cardDoc(userId, id));
   if (!snap.exists()) return undefined;
   return toCard(snap.id, snap.data());
 }
 
-export async function saveCard(data: BusinessCardFormData): Promise<BusinessCard> {
+export async function saveCard(
+  userId: string,
+  data: BusinessCardFormData
+): Promise<BusinessCard> {
   const now = Timestamp.now();
-  const docData = {
-    ...data,
-    createdAt: now,
-    updatedAt: now,
-  };
-  const docRef = await addDoc(collection(db, COLLECTION), docData);
+  const docData = { ...data, createdAt: now, updatedAt: now };
+  const docRef = await addDoc(cardsCollection(userId), docData);
   return toCard(docRef.id, docData);
 }
 
 export async function updateCard(
+  userId: string,
   id: string,
   data: BusinessCardFormData
 ): Promise<BusinessCard | undefined> {
-  const docRef = doc(db, COLLECTION, id);
-  const snap = await getDoc(docRef);
+  const ref = cardDoc(userId, id);
+  const snap = await getDoc(ref);
   if (!snap.exists()) return undefined;
-
-  const updateData = {
-    ...data,
-    updatedAt: Timestamp.now(),
-  };
-  await updateDoc(docRef, updateData);
+  const updateData = { ...data, updatedAt: Timestamp.now() };
+  await updateDoc(ref, updateData);
   return toCard(id, { ...snap.data(), ...updateData });
 }
 
-export async function deleteCard(id: string): Promise<boolean> {
+export async function deleteCard(userId: string, id: string): Promise<boolean> {
   try {
-    await deleteDoc(doc(db, COLLECTION, id));
+    await deleteDoc(cardDoc(userId, id));
     return true;
   } catch {
     return false;
   }
 }
 
-export async function searchCards(queryStr: string): Promise<BusinessCard[]> {
-  const cards = await getCards();
+export async function searchCards(
+  userId: string,
+  queryStr: string
+): Promise<BusinessCard[]> {
+  const cards = await getCards(userId);
   if (!queryStr.trim()) return cards;
   const q = queryStr.toLowerCase();
   return cards.filter((c) => {
     const searchable = [
-      c.lastName, c.firstName, c.lastNameKana, c.firstNameKana,
-      c.company, c.department, c.position, c.email,
-      c.phone, c.mobile, c.address, c.notes,
-    ].join(" ").toLowerCase();
+      c.lastName,
+      c.firstName,
+      c.lastNameKana,
+      c.firstNameKana,
+      c.company,
+      c.department,
+      c.position,
+      c.email,
+      c.phone,
+      c.mobile,
+      c.address,
+      c.notes,
+    ]
+      .join(" ")
+      .toLowerCase();
     return searchable.includes(q);
   });
 }
