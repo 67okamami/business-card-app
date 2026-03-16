@@ -38,8 +38,31 @@ export async function analyzeBusinessCard(
   }
 
   const parsed = await res.json();
+  const formData: BusinessCardFormData = { ...emptyFormData, ...parsed.values };
+
+  // company がある場合、Google CSE で会社HPを取得
+  if (formData.company) {
+    try {
+      const cseRes = await fetch(
+        `/api/company-url?company=${encodeURIComponent(formData.company)}`
+      );
+      if (cseRes.ok) {
+        const cseData = await cseRes.json();
+        if (cseData.url) {
+          formData.companyUrl = cseData.url;
+          // 名刺記載URLと同じなら関連サイトから削除（重複防止）
+          if (formData.website === cseData.url) {
+            formData.website = "";
+          }
+        }
+      }
+    } catch {
+      // 取得失敗は無視して続行
+    }
+  }
+
   return {
-    formData: { ...emptyFormData, ...parsed.values },
+    formData,
     confidence: parsed.confidence ?? {},
   };
 }
