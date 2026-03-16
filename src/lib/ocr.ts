@@ -40,8 +40,8 @@ export async function analyzeBusinessCard(
   const parsed = await res.json();
   const formData: BusinessCardFormData = { ...emptyFormData, ...parsed.values };
 
-  // companyUrl が空で company がある場合、Google CSE で会社HP を自動取得
-  if (!formData.companyUrl && formData.company) {
+  // company がある場合、Google CSE で会社HPを取得
+  if (formData.company) {
     try {
       const cseRes = await fetch(
         `/api/company-url?company=${encodeURIComponent(formData.company)}`
@@ -50,6 +50,10 @@ export async function analyzeBusinessCard(
         const cseData = await cseRes.json();
         if (cseData.url) {
           formData.companyUrl = cseData.url;
+          // 名刺記載URLと同じなら関連サイトから削除（重複防止）
+          if (formData.website === cseData.url) {
+            formData.website = "";
+          }
         }
       }
     } catch {
