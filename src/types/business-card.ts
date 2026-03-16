@@ -18,11 +18,12 @@ export interface BusinessCard {
   imageUrl: string;
   createdAt: string;
   updatedAt: string;
+  sharedWith: string[];
 }
 
 export type BusinessCardFormData = Omit<
   BusinessCard,
-  "id" | "createdAt" | "updatedAt"
+  "id" | "createdAt" | "updatedAt" | "sharedWith"
 >;
 
 export const emptyFormData: BusinessCardFormData = {
