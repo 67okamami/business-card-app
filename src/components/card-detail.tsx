@@ -96,9 +96,14 @@ export function CardDetail({ card }: CardDetailProps) {
                     <span className="break-words">{card.company}</span>
                   )}
                   {card.stockCode && (
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground">
+                    <a
+                      href={`https://finance.yahoo.co.jp/quote/${card.stockCode}.T`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono text-muted-foreground hover:bg-muted/70 hover:text-primary transition-colors"
+                    >
                       {card.stockCode}
-                    </span>
+                    </a>
                   )}
                 </p>
               </div>
